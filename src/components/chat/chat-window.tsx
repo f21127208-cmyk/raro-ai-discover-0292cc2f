@@ -91,8 +91,7 @@ export function ChatWindow({
       .catch(() => {});
   }, [status, currentThreadId, renameFn, qc]);
 
-  const handleSubmit = async (e?: React.FormEvent) => {
-    e?.preventDefault();
+  const handleSubmit = async () => {
     const text = input.trim();
     if (!text || isLoading) return;
 
@@ -142,7 +141,7 @@ export function ChatWindow({
               }
               return (
                 <Message key={m.id} from="assistant">
-                  <MessageContent variant="flat" className="!bg-transparent !p-0">
+                  <MessageContent className="!bg-transparent !p-0">
                     {text ? (
                       <div className="prose prose-invert prose-sm max-w-none prose-a:text-primary prose-headings:text-foreground prose-strong:text-foreground">
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
@@ -157,7 +156,7 @@ export function ChatWindow({
           )}
           {isLoading && messages[messages.length - 1]?.role === "user" && (
             <Message from="assistant">
-              <MessageContent variant="flat" className="!bg-transparent !p-0">
+              <MessageContent className="!bg-transparent !p-0">
                 <Shimmer>Garimpando conteúdos raros...</Shimmer>
               </MessageContent>
             </Message>
