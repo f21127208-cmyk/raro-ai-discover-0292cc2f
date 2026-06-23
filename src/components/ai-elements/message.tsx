@@ -326,7 +326,7 @@ const streamdownPlugins = { cjk, code, math, mermaid };
 const streamdownComponents = {
   a: ({ className: aClassName, ...aProps }: ComponentProps<"a">) => (
     <a
-      {...aProps}
+      {...(aProps as ComponentProps<"a">)}
       target="_blank"
       rel="noopener noreferrer"
       className={cn(
@@ -335,7 +335,7 @@ const streamdownComponents = {
       )}
     />
   ),
-};
+} as ComponentProps<typeof Streamdown>["components"];
 
 export const MessageResponse = memo(
   ({ className, components, ...props }: MessageResponseProps) => (
