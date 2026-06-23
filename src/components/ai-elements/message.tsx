@@ -323,14 +323,29 @@ export type MessageResponseProps = ComponentProps<typeof Streamdown>;
 
 const streamdownPlugins = { cjk, code, math, mermaid };
 
+const streamdownComponents = {
+  a: ({ className: aClassName, ...aProps }: ComponentProps<"a">) => (
+    <a
+      {...aProps}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={cn(
+        "font-medium text-primary underline decoration-primary/40 underline-offset-4 transition-colors hover:decoration-primary",
+        aClassName
+      )}
+    />
+  ),
+};
+
 export const MessageResponse = memo(
-  ({ className, ...props }: MessageResponseProps) => (
+  ({ className, components, ...props }: MessageResponseProps) => (
     <Streamdown
       className={cn(
         "size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
         className
       )}
       plugins={streamdownPlugins}
+      components={{ ...streamdownComponents, ...(components ?? {}) }}
       {...props}
     />
   ),
