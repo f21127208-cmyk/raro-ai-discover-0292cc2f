@@ -297,6 +297,15 @@ export function ChatWindow({
     <div className="flex flex-col h-full">
       {/* Top bar */}
       <div className="flex items-center justify-end gap-2 px-4 py-2 border-b border-border/50 bg-background/60 backdrop-blur">
+        <Dialog open={noticeOpen} onOpenChange={setNoticeOpen}>
+          <DialogTrigger asChild>
+            <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground">
+              <Info className="size-4" />
+              Aviso legal
+            </Button>
+          </DialogTrigger>
+          <LegalNoticeDialog />
+        </Dialog>
         <Button
           variant="outline"
           size="sm"
@@ -308,6 +317,34 @@ export function ChatWindow({
           Salvar conversa
         </Button>
       </div>
+
+      {!noticeDismissed && (
+        <div className="border-b border-amber-500/30 bg-amber-500/10 px-4 py-2.5">
+          <div className="max-w-3xl mx-auto w-full flex items-start gap-3 text-xs">
+            <ShieldAlert className="size-4 text-amber-400 shrink-0 mt-0.5" />
+            <p className="text-amber-100/90 leading-relaxed flex-1">
+              A <strong>Raro AI</strong> é uma ferramenta de pesquisa de conteúdos públicos raros.
+              Não promovemos pirataria, downloads ilegais ou acesso não autorizado.
+              Respeite as leis locais, os direitos autorais e os termos das fontes consultadas.{" "}
+              <button
+                type="button"
+                onClick={() => setNoticeOpen(true)}
+                className="underline underline-offset-2 hover:text-amber-200"
+              >
+                Ler aviso completo
+              </button>
+            </p>
+            <button
+              type="button"
+              onClick={dismissNotice}
+              className="text-amber-200/70 hover:text-amber-100 shrink-0"
+              aria-label="Fechar aviso"
+            >
+              <X className="size-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       <Conversation className="flex-1 min-h-0">
         <ConversationContent className="max-w-3xl mx-auto w-full px-4">
