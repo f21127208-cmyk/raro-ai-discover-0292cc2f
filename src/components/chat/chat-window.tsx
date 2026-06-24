@@ -83,6 +83,7 @@ export function ChatWindow({
   const [transcribing, setTranscribing] = useState(false);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [noticeOpen, setNoticeOpen] = useState(false);
   const [noticeDismissed, setNoticeDismissed] = useState(true);
 
