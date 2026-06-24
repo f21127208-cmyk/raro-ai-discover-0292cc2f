@@ -520,3 +520,35 @@ function EmptyState({ onPick }: { onPick: (s: string) => void }) {
     </div>
   );
 }
+
+function LegalNoticeDialog() {
+  return (
+    <DialogContent className="max-w-lg">
+      <DialogHeader>
+        <DialogTitle className="flex items-center gap-2">
+          <ShieldAlert className="size-5 text-amber-400" />
+          Aviso legal — Raro AI
+        </DialogTitle>
+        <DialogDescription>Leia antes de usar a plataforma.</DialogDescription>
+      </DialogHeader>
+      <div className="space-y-3 text-sm text-foreground/90 leading-relaxed">
+        <p>
+          A <strong>Raro AI</strong> é uma ferramenta de pesquisa e descoberta de informações raras,
+          histórias esquecidas, arquivos históricos, projetos antigos e conteúdos públicos difíceis de encontrar.
+        </p>
+        <p>
+          A plataforma <strong>não promove, incentiva ou fornece</strong> pirataria, downloads ilegais,
+          invasão de sistemas, quebra de direitos autorais ou acesso não autorizado a conteúdos protegidos.
+        </p>
+        <p>
+          Todas as pesquisas devem respeitar as <strong>leis locais</strong>, os <strong>direitos autorais</strong>
+          {" "}e os <strong>termos de uso</strong> das fontes consultadas.
+        </p>
+        <p>
+          O foco da Raro AI é <strong>preservar conhecimento</strong>, encontrar informações históricas e ajudar
+          usuários a descobrir conteúdos legítimos que normalmente são difíceis de localizar.
+        </p>
+      </div>
+    </DialogContent>
+  );
+}
