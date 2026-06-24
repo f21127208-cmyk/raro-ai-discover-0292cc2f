@@ -24,7 +24,15 @@ import { Shimmer } from "@/components/ai-elements/shimmer";
 import { Button } from "@/components/ui/button";
 import logo from "@/assets/raro-logo.png";
 import { toast } from "sonner";
-import { Mic, Paperclip, Download, X, Square } from "lucide-react";
+import { Mic, Paperclip, Download, X, Square, ShieldAlert, Info } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const SUGGESTIONS = [
   "Encontre histórias raras para vídeos de IA",
@@ -76,6 +84,18 @@ export function ChatWindow({
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [noticeOpen, setNoticeOpen] = useState(false);
+  const [noticeDismissed, setNoticeDismissed] = useState(true);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setNoticeDismissed(localStorage.getItem("raro-notice-dismissed") === "1");
+  }, []);
+
+  const dismissNotice = () => {
+    localStorage.setItem("raro-notice-dismissed", "1");
+    setNoticeDismissed(true);
+  };
 
   const [currentThreadId, setCurrentThreadId] = useState<string | null>(threadId);
   const pendingTitleRef = useRef<string | null>(null);
@@ -277,6 +297,15 @@ export function ChatWindow({
     <div className="flex flex-col h-full">
       {/* Top bar */}
       <div className="flex items-center justify-end gap-2 px-4 py-2 border-b border-border/50 bg-background/60 backdrop-blur">
+        <Dialog open={noticeOpen} onOpenChange={setNoticeOpen}>
+          <DialogTrigger asChild>
+            <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground">
+              <Info className="size-4" />
+              Aviso legal
+            </Button>
+          </DialogTrigger>
+          <LegalNoticeDialog />
+        </Dialog>
         <Button
           variant="outline"
           size="sm"
@@ -288,6 +317,34 @@ export function ChatWindow({
           Salvar conversa
         </Button>
       </div>
+
+      {!noticeDismissed && (
+        <div className="border-b border-amber-500/30 bg-amber-500/10 px-4 py-2.5">
+          <div className="max-w-3xl mx-auto w-full flex items-start gap-3 text-xs">
+            <ShieldAlert className="size-4 text-amber-400 shrink-0 mt-0.5" />
+            <p className="text-amber-100/90 leading-relaxed flex-1">
+              A <strong>Raro AI</strong> é uma ferramenta de pesquisa de conteúdos públicos raros.
+              Não promovemos pirataria, downloads ilegais ou acesso não autorizado.
+              Respeite as leis locais, os direitos autorais e os termos das fontes consultadas.{" "}
+              <button
+                type="button"
+                onClick={() => setNoticeOpen(true)}
+                className="underline underline-offset-2 hover:text-amber-200"
+              >
+                Ler aviso completo
+              </button>
+            </p>
+            <button
+              type="button"
+              onClick={dismissNotice}
+              className="text-amber-200/70 hover:text-amber-100 shrink-0"
+              aria-label="Fechar aviso"
+            >
+              <X className="size-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       <Conversation className="flex-1 min-h-0">
         <ConversationContent className="max-w-3xl mx-auto w-full px-4">
@@ -461,5 +518,37 @@ function EmptyState({ onPick }: { onPick: (s: string) => void }) {
         ))}
       </div>
     </div>
+  );
+}
+
+function LegalNoticeDialog() {
+  return (
+    <DialogContent className="max-w-lg">
+      <DialogHeader>
+        <DialogTitle className="flex items-center gap-2">
+          <ShieldAlert className="size-5 text-amber-400" />
+          Aviso legal — Raro AI
+        </DialogTitle>
+        <DialogDescription>Leia antes de usar a plataforma.</DialogDescription>
+      </DialogHeader>
+      <div className="space-y-3 text-sm text-foreground/90 leading-relaxed">
+        <p>
+          A <strong>Raro AI</strong> é uma ferramenta de pesquisa e descoberta de informações raras,
+          histórias esquecidas, arquivos históricos, projetos antigos e conteúdos públicos difíceis de encontrar.
+        </p>
+        <p>
+          A plataforma <strong>não promove, incentiva ou fornece</strong> pirataria, downloads ilegais,
+          invasão de sistemas, quebra de direitos autorais ou acesso não autorizado a conteúdos protegidos.
+        </p>
+        <p>
+          Todas as pesquisas devem respeitar as <strong>leis locais</strong>, os <strong>direitos autorais</strong>
+          {" "}e os <strong>termos de uso</strong> das fontes consultadas.
+        </p>
+        <p>
+          O foco da Raro AI é <strong>preservar conhecimento</strong>, encontrar informações históricas e ajudar
+          usuários a descobrir conteúdos legítimos que normalmente são difíceis de localizar.
+        </p>
+      </div>
+    </DialogContent>
   );
 }
