@@ -83,7 +83,18 @@ export function ChatWindow({
   const [transcribing, setTranscribing] = useState(false);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [noticeOpen, setNoticeOpen] = useState(false);
+  const [noticeDismissed, setNoticeDismissed] = useState(true);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setNoticeDismissed(localStorage.getItem("raro-notice-dismissed") === "1");
+  }, []);
+
+  const dismissNotice = () => {
+    localStorage.setItem("raro-notice-dismissed", "1");
+    setNoticeDismissed(true);
+  };
 
   const [currentThreadId, setCurrentThreadId] = useState<string | null>(threadId);
   const pendingTitleRef = useRef<string | null>(null);
