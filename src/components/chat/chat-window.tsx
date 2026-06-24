@@ -24,7 +24,15 @@ import { Shimmer } from "@/components/ai-elements/shimmer";
 import { Button } from "@/components/ui/button";
 import logo from "@/assets/raro-logo.png";
 import { toast } from "sonner";
-import { Mic, Paperclip, Download, X, Square } from "lucide-react";
+import { Mic, Paperclip, Download, X, Square, ShieldAlert, Info } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const SUGGESTIONS = [
   "Encontre histórias raras para vídeos de IA",
