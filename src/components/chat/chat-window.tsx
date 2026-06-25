@@ -565,6 +565,29 @@ export function ChatWindow({
             </div>
           )}
 
+          {musicUrl && (
+            <div className="mb-3 rounded-xl border border-primary/30 bg-card/60 p-3">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-0">
+                  <Music2 className="size-3.5 text-primary shrink-0" />
+                  <span className="truncate">🎵 {musicPrompt}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (musicUrl) URL.revokeObjectURL(musicUrl);
+                    setMusicUrl(null);
+                  }}
+                  className="text-muted-foreground hover:text-foreground shrink-0"
+                  aria-label="Fechar música"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+              <audio src={musicUrl} controls autoPlay className="w-full" />
+            </div>
+          )}
+
           <PromptInput onSubmit={handleSubmit}>
             <PromptInputTextarea
               value={input}
