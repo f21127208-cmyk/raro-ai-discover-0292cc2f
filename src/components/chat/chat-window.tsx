@@ -24,7 +24,7 @@ import { Shimmer } from "@/components/ai-elements/shimmer";
 import { Button } from "@/components/ui/button";
 import logo from "@/assets/raro-logo.png";
 import { toast } from "sonner";
-import { Mic, Paperclip, Download, X, Square, ShieldAlert, Info, Volume2, Loader2 } from "lucide-react";
+import { Mic, Paperclip, Download, X, Square, ShieldAlert, Info, Volume2, Loader2, Music2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
