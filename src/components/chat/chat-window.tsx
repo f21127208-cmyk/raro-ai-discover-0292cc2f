@@ -91,6 +91,40 @@ export function ChatWindow({
   const audioUrlRef = useRef<string | null>(null);
   const ttsAbortRef = useRef<AbortController | null>(null);
   const ttsReqIdRef = useRef(0);
+  const [generatingMusic, setGeneratingMusic] = useState(false);
+  const [musicUrl, setMusicUrl] = useState<string | null>(null);
+  const [musicPrompt, setMusicPrompt] = useState<string>("");
+
+  const generateMusic = async () => {
+    const prompt = input.trim();
+    if (!prompt) {
+      toast.error("Descreva a música no campo de texto (ex: 'música sombria de piano').");
+      return;
+    }
+    if (generatingMusic) return;
+    setGeneratingMusic(true);
+    try {
+      const res = await fetch("/api/music", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt, durationSeconds: 30 }),
+      });
+      if (!res.ok) throw new Error((await res.text()) || "Falha ao gerar música");
+      const blob = await res.blob();
+      if (musicUrl) URL.revokeObjectURL(musicUrl);
+      setMusicUrl(URL.createObjectURL(blob));
+      setMusicPrompt(prompt);
+      toast.success("Música pronta! Toque abaixo.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao gerar música");
+    } finally {
+      setGeneratingMusic(false);
+    }
+  };
+
+  useEffect(() => () => {
+    if (musicUrl) URL.revokeObjectURL(musicUrl);
+  }, [musicUrl]);
 
   const stopCurrentAudio = () => {
     ttsAbortRef.current?.abort();
