@@ -608,6 +608,17 @@ export function ChatWindow({
                 >
                   {recording ? <Square className="size-4" /> : <Mic className="size-4" />}
                 </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={generateMusic}
+                  disabled={isLoading || transcribing || generatingMusic || !input.trim()}
+                  aria-label="Gerar música"
+                  title="Gerar música a partir do texto"
+                >
+                  {generatingMusic ? <Loader2 className="size-4 animate-spin" /> : <Music2 className="size-4" />}
+                </Button>
               </div>
               <div className="ml-auto">
                 <PromptInputSubmit
