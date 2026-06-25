@@ -24,7 +24,7 @@ import { Shimmer } from "@/components/ai-elements/shimmer";
 import { Button } from "@/components/ui/button";
 import logo from "@/assets/raro-logo.png";
 import { toast } from "sonner";
-import { Mic, Paperclip, Download, X, Square, ShieldAlert, Info } from "lucide-react";
+import { Mic, Paperclip, Download, X, Square, ShieldAlert, Info, Volume2, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -86,6 +86,49 @@ export function ChatWindow({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [noticeOpen, setNoticeOpen] = useState(false);
   const [noticeDismissed, setNoticeDismissed] = useState(true);
+  const [speakingId, setSpeakingId] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const speak = async (id: string, text: string) => {
+    const clean = text.trim();
+    if (!clean) return;
+    if (speakingId === id) {
+      audioRef.current?.pause();
+      audioRef.current = null;
+      setSpeakingId(null);
+      return;
+    }
+    audioRef.current?.pause();
+    setSpeakingId(id);
+    try {
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: clean }),
+      });
+      if (!res.ok) throw new Error(await res.text().catch(() => "Falha ao gerar voz"));
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      audio.onended = () => {
+        URL.revokeObjectURL(url);
+        if (audioRef.current === audio) {
+          audioRef.current = null;
+          setSpeakingId((cur) => (cur === id ? null : cur));
+        }
+      };
+      audio.onerror = () => {
+        URL.revokeObjectURL(url);
+        setSpeakingId((cur) => (cur === id ? null : cur));
+        toast.error("Erro ao reproduzir áudio");
+      };
+      await audio.play();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao gerar voz");
+      setSpeakingId((cur) => (cur === id ? null : cur));
+    }
+  };
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -379,9 +422,32 @@ export function ChatWindow({
                 <Message key={m.id} from="assistant">
                   <MessageContent className="!bg-transparent !p-0">
                     {text ? (
-                      <div className="prose prose-invert prose-sm max-w-none prose-a:text-primary prose-headings:text-foreground prose-strong:text-foreground">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
-                      </div>
+                      <>
+                        <div className="prose prose-invert prose-sm max-w-none prose-a:text-primary prose-headings:text-foreground prose-strong:text-foreground">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
+                        </div>
+                        <div className="mt-2">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => speak(m.id, text)}
+                            className="h-7 px-2 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+                          >
+                            {speakingId === m.id ? (
+                              <>
+                                <Loader2 className="size-3.5 animate-spin" />
+                                Reproduzindo... clique para parar
+                              </>
+                            ) : (
+                              <>
+                                <Volume2 className="size-3.5" />
+                                Ouvir
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </>
                     ) : (
                       <Shimmer>Garimpando conteúdos raros...</Shimmer>
                     )}
