@@ -86,6 +86,49 @@ export function ChatWindow({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [noticeOpen, setNoticeOpen] = useState(false);
   const [noticeDismissed, setNoticeDismissed] = useState(true);
+  const [speakingId, setSpeakingId] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const speak = async (id: string, text: string) => {
+    const clean = text.trim();
+    if (!clean) return;
+    if (speakingId === id) {
+      audioRef.current?.pause();
+      audioRef.current = null;
+      setSpeakingId(null);
+      return;
+    }
+    audioRef.current?.pause();
+    setSpeakingId(id);
+    try {
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: clean }),
+      });
+      if (!res.ok) throw new Error(await res.text().catch(() => "Falha ao gerar voz"));
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      audio.onended = () => {
+        URL.revokeObjectURL(url);
+        if (audioRef.current === audio) {
+          audioRef.current = null;
+          setSpeakingId((cur) => (cur === id ? null : cur));
+        }
+      };
+      audio.onerror = () => {
+        URL.revokeObjectURL(url);
+        setSpeakingId((cur) => (cur === id ? null : cur));
+        toast.error("Erro ao reproduzir áudio");
+      };
+      await audio.play();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao gerar voz");
+      setSpeakingId((cur) => (cur === id ? null : cur));
+    }
+  };
 
   useEffect(() => {
     if (typeof window === "undefined") return;
