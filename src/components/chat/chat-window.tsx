@@ -422,9 +422,32 @@ export function ChatWindow({
                 <Message key={m.id} from="assistant">
                   <MessageContent className="!bg-transparent !p-0">
                     {text ? (
-                      <div className="prose prose-invert prose-sm max-w-none prose-a:text-primary prose-headings:text-foreground prose-strong:text-foreground">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
-                      </div>
+                      <>
+                        <div className="prose prose-invert prose-sm max-w-none prose-a:text-primary prose-headings:text-foreground prose-strong:text-foreground">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
+                        </div>
+                        <div className="mt-2">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => speak(m.id, text)}
+                            className="h-7 px-2 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+                          >
+                            {speakingId === m.id ? (
+                              <>
+                                <Loader2 className="size-3.5 animate-spin" />
+                                Reproduzindo... clique para parar
+                              </>
+                            ) : (
+                              <>
+                                <Volume2 className="size-3.5" />
+                                Ouvir
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </>
                     ) : (
                       <Shimmer>Garimpando conteúdos raros...</Shimmer>
                     )}
