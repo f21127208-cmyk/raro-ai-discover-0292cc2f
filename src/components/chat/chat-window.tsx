@@ -24,7 +24,7 @@ import { Shimmer } from "@/components/ai-elements/shimmer";
 import { Button } from "@/components/ui/button";
 import logo from "@/assets/raro-logo.png";
 import { toast } from "sonner";
-import { Mic, Paperclip, Download, X, Square, ShieldAlert, Info, Volume2, Loader2 } from "lucide-react";
+import { Mic, Paperclip, Download, X, Square, ShieldAlert, Info, Volume2, Loader2, Music2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -91,6 +91,40 @@ export function ChatWindow({
   const audioUrlRef = useRef<string | null>(null);
   const ttsAbortRef = useRef<AbortController | null>(null);
   const ttsReqIdRef = useRef(0);
+  const [generatingMusic, setGeneratingMusic] = useState(false);
+  const [musicUrl, setMusicUrl] = useState<string | null>(null);
+  const [musicPrompt, setMusicPrompt] = useState<string>("");
+
+  const generateMusic = async () => {
+    const prompt = input.trim();
+    if (!prompt) {
+      toast.error("Descreva a música no campo de texto (ex: 'música sombria de piano').");
+      return;
+    }
+    if (generatingMusic) return;
+    setGeneratingMusic(true);
+    try {
+      const res = await fetch("/api/music", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt, durationSeconds: 30 }),
+      });
+      if (!res.ok) throw new Error((await res.text()) || "Falha ao gerar música");
+      const blob = await res.blob();
+      if (musicUrl) URL.revokeObjectURL(musicUrl);
+      setMusicUrl(URL.createObjectURL(blob));
+      setMusicPrompt(prompt);
+      toast.success("Música pronta! Toque abaixo.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao gerar música");
+    } finally {
+      setGeneratingMusic(false);
+    }
+  };
+
+  useEffect(() => () => {
+    if (musicUrl) URL.revokeObjectURL(musicUrl);
+  }, [musicUrl]);
 
   const stopCurrentAudio = () => {
     ttsAbortRef.current?.abort();
@@ -531,6 +565,29 @@ export function ChatWindow({
             </div>
           )}
 
+          {musicUrl && (
+            <div className="mb-3 rounded-xl border border-primary/30 bg-card/60 p-3">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-0">
+                  <Music2 className="size-3.5 text-primary shrink-0" />
+                  <span className="truncate">🎵 {musicPrompt}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (musicUrl) URL.revokeObjectURL(musicUrl);
+                    setMusicUrl(null);
+                  }}
+                  className="text-muted-foreground hover:text-foreground shrink-0"
+                  aria-label="Fechar música"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+              <audio src={musicUrl} controls autoPlay className="w-full" />
+            </div>
+          )}
+
           <PromptInput onSubmit={handleSubmit}>
             <PromptInputTextarea
               value={input}
@@ -573,6 +630,17 @@ export function ChatWindow({
                   aria-label={recording ? "Parar gravação" : "Gravar áudio"}
                 >
                   {recording ? <Square className="size-4" /> : <Mic className="size-4" />}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={generateMusic}
+                  disabled={isLoading || transcribing || generatingMusic || !input.trim()}
+                  aria-label="Gerar música"
+                  title="Gerar música a partir do texto"
+                >
+                  {generatingMusic ? <Loader2 className="size-4 animate-spin" /> : <Music2 className="size-4" />}
                 </Button>
               </div>
               <div className="ml-auto">
