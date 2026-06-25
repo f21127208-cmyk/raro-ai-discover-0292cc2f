@@ -88,47 +88,83 @@ export function ChatWindow({
   const [noticeDismissed, setNoticeDismissed] = useState(true);
   const [speakingId, setSpeakingId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioUrlRef = useRef<string | null>(null);
+  const ttsAbortRef = useRef<AbortController | null>(null);
+  const ttsReqIdRef = useRef(0);
+
+  const stopCurrentAudio = () => {
+    ttsAbortRef.current?.abort();
+    ttsAbortRef.current = null;
+    if (audioRef.current) {
+      audioRef.current.onended = null;
+      audioRef.current.onerror = null;
+      audioRef.current.pause();
+      audioRef.current.src = "";
+      audioRef.current = null;
+    }
+    if (audioUrlRef.current) {
+      URL.revokeObjectURL(audioUrlRef.current);
+      audioUrlRef.current = null;
+    }
+  };
 
   const speak = async (id: string, text: string) => {
     const clean = text.trim();
     if (!clean) return;
+    // Toggle off if already speaking this message
     if (speakingId === id) {
-      audioRef.current?.pause();
-      audioRef.current = null;
+      stopCurrentAudio();
       setSpeakingId(null);
       return;
     }
-    audioRef.current?.pause();
+    // Cancel any in-flight or playing audio
+    stopCurrentAudio();
+    const reqId = ++ttsReqIdRef.current;
+    const ctrl = new AbortController();
+    ttsAbortRef.current = ctrl;
     setSpeakingId(id);
     try {
       const res = await fetch("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: clean }),
+        signal: ctrl.signal,
       });
+      if (reqId !== ttsReqIdRef.current) return;
       if (!res.ok) throw new Error(await res.text().catch(() => "Falha ao gerar voz"));
       const blob = await res.blob();
+      if (reqId !== ttsReqIdRef.current) return;
       const url = URL.createObjectURL(blob);
       const audio = new Audio(url);
       audioRef.current = audio;
+      audioUrlRef.current = url;
       audio.onended = () => {
-        URL.revokeObjectURL(url);
         if (audioRef.current === audio) {
+          URL.revokeObjectURL(url);
           audioRef.current = null;
+          audioUrlRef.current = null;
           setSpeakingId((cur) => (cur === id ? null : cur));
         }
       };
       audio.onerror = () => {
-        URL.revokeObjectURL(url);
-        setSpeakingId((cur) => (cur === id ? null : cur));
-        toast.error("Erro ao reproduzir áudio");
+        if (audioRef.current === audio) {
+          URL.revokeObjectURL(url);
+          audioRef.current = null;
+          audioUrlRef.current = null;
+          setSpeakingId((cur) => (cur === id ? null : cur));
+          toast.error("Erro ao reproduzir áudio");
+        }
       };
       await audio.play();
     } catch (e) {
+      if ((e as { name?: string })?.name === "AbortError") return;
+      if (reqId !== ttsReqIdRef.current) return;
       toast.error(e instanceof Error ? e.message : "Erro ao gerar voz");
       setSpeakingId((cur) => (cur === id ? null : cur));
     }
   };
+
+  useEffect(() => () => stopCurrentAudio(), []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
