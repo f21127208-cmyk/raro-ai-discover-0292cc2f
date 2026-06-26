@@ -243,7 +243,18 @@ export function ChatWindow({
         };
       },
     }),
-    onError: (e) => toast.error(e.message),
+    onError: (e) => {
+      const msg = e.message || "";
+      if (/402/.test(msg) || /credit|crédito/i.test(msg)) {
+        toast.error("Créditos de IA esgotados. Adicione créditos no workspace Lovable para continuar.");
+      } else if (/401/.test(msg) || /unauthor/i.test(msg)) {
+        toast.error("Sessão expirada. Faça login novamente.");
+      } else if (/429/.test(msg)) {
+        toast.error("Muitas requisições. Aguarde alguns segundos e tente novamente.");
+      } else {
+        toast.error(msg || "Erro ao enviar mensagem. Tente novamente.");
+      }
+    },
   });
 
   const isLoading = status === "submitted" || status === "streaming";
