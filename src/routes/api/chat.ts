@@ -70,7 +70,8 @@ export const Route = createFileRoute("/api/chat")({
         if (!key) return new Response("Missing LOVABLE_API_KEY", { status: 500 });
 
         const gateway = createLovableAiGatewayProvider(key);
-        const model = gateway("google/gemini-3.1-flash-lite");
+        // Multimodal (aceita texto + imagem). Necessário para o recurso de foto.
+        const model = gateway("google/gemini-3-flash-preview");
 
         const result = streamText({
           model,
