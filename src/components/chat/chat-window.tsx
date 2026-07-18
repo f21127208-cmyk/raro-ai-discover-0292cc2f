@@ -49,10 +49,21 @@ type AnyPart = {
   filename?: string;
 };
 
-function messageText(m: UIMessage) {
-  return m.parts
-    .map((p) => ((p as AnyPart).type === "text" ? (p as AnyPart).text ?? "" : ""))
+function messageText(m: UIMessage): string {
+  // AI SDK v5: text lives in parts[].text when type === "text".
+  // Fallbacks: legacy `content` string, or any part with a `text` field.
+  const fromParts = (m.parts ?? [])
+    .map((p) => {
+      const ap = p as AnyPart;
+      if (ap.type === "text" && typeof ap.text === "string") return ap.text;
+      if (typeof ap.text === "string" && !ap.url) return ap.text;
+      return "";
+    })
     .join("");
+  if (fromParts.trim().length > 0) return fromParts;
+  const legacy = (m as unknown as { content?: unknown }).content;
+  if (typeof legacy === "string") return legacy;
+  return "";
 }
 
 function messageImages(m: UIMessage): { url: string; name?: string }[] {
@@ -394,24 +405,38 @@ export function ChatWindow({
       toast.error("Nada para salvar ainda.");
       return;
     }
-    const lines: string[] = ["# Conversa Raro AI", ""];
+    const lines: string[] = ["Conversa Raro AI", "=================", ""];
+    let hadText = false;
     for (const m of messages) {
       const who = m.role === "user" ? "Você" : "Raro AI";
       const text = messageText(m).trim();
       const imgs = messageImages(m);
-      lines.push(`## ${who}`, "");
-      if (imgs.length) lines.push(...imgs.map((i) => `![imagem](${i.url})`), "");
-      if (text) lines.push(text, "");
+      lines.push(`--- ${who} ---`);
+      if (imgs.length) {
+        for (const i of imgs) {
+          const isData = (i.url ?? "").startsWith("data:");
+          lines.push(`[imagem${i.name ? `: ${i.name}` : ""}]${isData ? "" : ` ${i.url}`}`);
+        }
+      }
+      if (text) {
+        hadText = true;
+        lines.push(text);
+      }
+      lines.push("");
     }
-    const blob = new Blob([lines.join("\n")], { type: "text/markdown" });
+    if (!hadText) {
+      console.warn("[saveConversation] messages sem texto detectado", messages);
+    }
+    const content = lines.join("\n");
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `raro-ai-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.md`;
+    a.download = `raro-ai-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.txt`;
     document.body.appendChild(a);
     a.click();
     a.remove();
-    URL.revokeObjectURL(url);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
     toast.success("Conversa salva!");
   };
 
