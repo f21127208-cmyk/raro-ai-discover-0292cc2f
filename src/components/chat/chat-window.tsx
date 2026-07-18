@@ -405,24 +405,38 @@ export function ChatWindow({
       toast.error("Nada para salvar ainda.");
       return;
     }
-    const lines: string[] = ["# Conversa Raro AI", ""];
+    const lines: string[] = ["Conversa Raro AI", "=================", ""];
+    let hadText = false;
     for (const m of messages) {
       const who = m.role === "user" ? "Você" : "Raro AI";
       const text = messageText(m).trim();
       const imgs = messageImages(m);
-      lines.push(`## ${who}`, "");
-      if (imgs.length) lines.push(...imgs.map((i) => `![imagem](${i.url})`), "");
-      if (text) lines.push(text, "");
+      lines.push(`--- ${who} ---`);
+      if (imgs.length) {
+        for (const i of imgs) {
+          const isData = (i.url ?? "").startsWith("data:");
+          lines.push(`[imagem${i.name ? `: ${i.name}` : ""}]${isData ? "" : ` ${i.url}`}`);
+        }
+      }
+      if (text) {
+        hadText = true;
+        lines.push(text);
+      }
+      lines.push("");
     }
-    const blob = new Blob([lines.join("\n")], { type: "text/markdown" });
+    if (!hadText) {
+      console.warn("[saveConversation] messages sem texto detectado", messages);
+    }
+    const content = lines.join("\n");
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `raro-ai-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.md`;
+    a.download = `raro-ai-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.txt`;
     document.body.appendChild(a);
     a.click();
     a.remove();
-    URL.revokeObjectURL(url);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
     toast.success("Conversa salva!");
   };
 
