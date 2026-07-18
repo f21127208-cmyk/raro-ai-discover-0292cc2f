@@ -10,6 +10,21 @@ import { toast } from "sonner";
 import logo from "@/assets/raro-logo.png";
 import { cn } from "@/lib/utils";
 
+function threadDisplayTitle(title: string) {
+  const normalized = title
+    .trim()
+    .toLocaleLowerCase("pt-BR")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[!.?,\s]/g, "");
+
+  if (["oi", "ola", "hello", "hi"].includes(normalized)) {
+    return "Conversa rápida";
+  }
+
+  return title;
+}
+
 export function ChatShell({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -116,7 +131,7 @@ export function ChatShell({ children }: { children: React.ReactNode }) {
                     onClick={() => setMobileOpen(false)}
                     className="flex-1 truncate text-sidebar-foreground"
                   >
-                    {t.title}
+                    {threadDisplayTitle(t.title)}
                   </Link>
                   <button
                     type="button"
