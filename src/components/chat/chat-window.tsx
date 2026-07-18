@@ -75,6 +75,24 @@ function messageImages(m: UIMessage): { url: string; name?: string }[] {
     .map((p) => ({ url: (p as AnyPart).url!, name: (p as AnyPart).filename }));
 }
 
+function makeThreadTitle(text: string, hasImage: boolean) {
+  const clean = text.replace(/\s+/g, " ").trim();
+  if (!clean && hasImage) return "Análise de imagem";
+  if (!clean) return "Nova conversa";
+
+  const normalized = clean
+    .toLocaleLowerCase("pt-BR")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[!.?,\s]/g, "");
+
+  if (["oi", "ola", "olá", "eai", "hello", "hi"].includes(normalized)) {
+    return "Conversa rápida";
+  }
+
+  return clean.slice(0, 80);
+}
+
 export function ChatWindow({
   threadId,
   initialMessages,
@@ -269,6 +287,8 @@ export function ChatWindow({
   });
 
   const isLoading = status === "submitted" || status === "streaming";
+  const visibleMessages = messages.length > 0 ? messages : initialMessages;
+  const hasMessagesToSave = visibleMessages.length > 0;
 
   useEffect(() => {
     if (status !== "ready") return;
@@ -286,9 +306,10 @@ export function ChatWindow({
     if ((!text && pendingFiles.length === 0) || isLoading) return;
 
     let tid = currentThreadId;
+    const nextTitle = makeThreadTitle(text, pendingFiles.length > 0);
     if (!tid) {
       try {
-        const t = await createFn({ data: { title: (text || "Nova conversa").slice(0, 80) } });
+        const t = await createFn({ data: { title: nextTitle } });
         tid = t.id;
         setCurrentThreadId(t.id);
         qc.invalidateQueries({ queryKey: ["threads"] });
@@ -297,8 +318,8 @@ export function ChatWindow({
         toast.error(err instanceof Error ? err.message : "Falha ao criar conversa");
         return;
       }
-    } else if (messages.length === 0) {
-      pendingTitleRef.current = text || "Imagem enviada";
+    } else if (visibleMessages.length === 0) {
+      pendingTitleRef.current = nextTitle;
     }
 
     // Build FileList from pending files for sendMessage
@@ -401,13 +422,13 @@ export function ChatWindow({
 
   // ---- Save conversation ----
   const saveConversation = () => {
-    if (messages.length === 0) {
+    if (visibleMessages.length === 0) {
       toast.error("Nada para salvar ainda.");
       return;
     }
     const lines: string[] = ["Conversa Raro AI", "=================", ""];
     let hadText = false;
-    for (const m of messages) {
+    for (const m of visibleMessages) {
       const who = m.role === "user" ? "Você" : "Raro AI";
       const text = messageText(m).trim();
       const imgs = messageImages(m);
@@ -440,7 +461,7 @@ export function ChatWindow({
     toast.success("Conversa salva!");
   };
 
-  const isEmpty = messages.length === 0;
+  const isEmpty = visibleMessages.length === 0;
 
   return (
     <div className="flex flex-col h-full">
@@ -500,7 +521,7 @@ export function ChatWindow({
           {isEmpty ? (
             <EmptyState onPick={(s) => setInput(s)} />
           ) : (
-            messages.map((m) => {
+            visibleMessages.map((m) => {
               const text = messageText(m);
               const imgs = messageImages(m);
               if (m.role === "user") {
@@ -562,7 +583,7 @@ export function ChatWindow({
               );
             })
           )}
-          {isLoading && messages[messages.length - 1]?.role === "user" && (
+          {isLoading && visibleMessages[visibleMessages.length - 1]?.role === "user" && (
             <Message from="assistant">
               <MessageContent className="!bg-transparent !p-0">
                 <Shimmer>Garimpando conteúdos raros...</Shimmer>

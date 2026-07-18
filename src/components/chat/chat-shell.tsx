@@ -2,13 +2,28 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { listThreads, createThread, deleteThread } from "@/lib/threads.functions";
+import { listThreads, deleteThread } from "@/lib/threads.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, LogOut, MessageSquare, Search } from "lucide-react";
 import { toast } from "sonner";
 import logo from "@/assets/raro-logo.png";
 import { cn } from "@/lib/utils";
+
+function threadDisplayTitle(title: string) {
+  const normalized = title
+    .trim()
+    .toLocaleLowerCase("pt-BR")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[!.?,\s]/g, "");
+
+  if (["oi", "ola", "hello", "hi"].includes(normalized)) {
+    return "Conversa rápida";
+  }
+
+  return title;
+}
 
 export function ChatShell({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
@@ -19,7 +34,6 @@ export function ChatShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const listFn = useServerFn(listThreads);
-  const createFn = useServerFn(createThread);
   const deleteFn = useServerFn(deleteThread);
 
   const { data: threads = [] } = useQuery({
@@ -30,15 +44,6 @@ export function ChatShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
   }, []);
-
-  const newChat = useMutation({
-    mutationFn: () => createFn({ data: {} }),
-    onSuccess: (thread) => {
-      qc.invalidateQueries({ queryKey: ["threads"] });
-      navigate({ to: "/chat/$threadId", params: { threadId: thread.id } });
-      setMobileOpen(false);
-    },
-  });
 
   const del = useMutation({
     mutationFn: (id: string) => deleteFn({ data: { id } }),
@@ -82,8 +87,10 @@ export function ChatShell({ children }: { children: React.ReactNode }) {
 
         <div className="px-3">
           <Button
-            onClick={() => newChat.mutate()}
-            disabled={newChat.isPending}
+            onClick={() => {
+              navigate({ to: "/chat" });
+              setMobileOpen(false);
+            }}
             className="w-full bg-gradient-rare text-primary-foreground hover:opacity-90 shadow-rare"
           >
             <Plus className="size-4" /> Nova conversa
@@ -116,7 +123,7 @@ export function ChatShell({ children }: { children: React.ReactNode }) {
                     onClick={() => setMobileOpen(false)}
                     className="flex-1 truncate text-sidebar-foreground"
                   >
-                    {t.title}
+                    {threadDisplayTitle(t.title)}
                   </Link>
                   <button
                     type="button"
