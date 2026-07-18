@@ -49,10 +49,21 @@ type AnyPart = {
   filename?: string;
 };
 
-function messageText(m: UIMessage) {
-  return m.parts
-    .map((p) => ((p as AnyPart).type === "text" ? (p as AnyPart).text ?? "" : ""))
+function messageText(m: UIMessage): string {
+  // AI SDK v5: text lives in parts[].text when type === "text".
+  // Fallbacks: legacy `content` string, or any part with a `text` field.
+  const fromParts = (m.parts ?? [])
+    .map((p) => {
+      const ap = p as AnyPart;
+      if (ap.type === "text" && typeof ap.text === "string") return ap.text;
+      if (typeof ap.text === "string" && !ap.url) return ap.text;
+      return "";
+    })
     .join("");
+  if (fromParts.trim().length > 0) return fromParts;
+  const legacy = (m as unknown as { content?: unknown }).content;
+  if (typeof legacy === "string") return legacy;
+  return "";
 }
 
 function messageImages(m: UIMessage): { url: string; name?: string }[] {
