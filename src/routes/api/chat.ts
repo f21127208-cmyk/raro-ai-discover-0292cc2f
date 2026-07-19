@@ -4,7 +4,21 @@ import { RARO_SYSTEM_PROMPT } from "@/lib/raro-prompt";
 import { convertToModelMessages, streamText, type UIMessage } from "ai";
 import { createClient } from "@supabase/supabase-js";
 
-type ChatRequestBody = { messages?: unknown; threadId?: string };
+type ChatRequestBody = { messages?: unknown; threadId?: string; model?: string };
+
+const ALLOWED_MODELS = new Set([
+  "google/gemini-3.5-flash",
+  "google/gemini-3-flash-preview",
+  "google/gemini-3.1-flash-lite",
+  "google/gemini-3.1-pro-preview",
+  "google/gemini-2.5-pro",
+  "google/gemini-2.5-flash",
+  "google/gemini-2.5-flash-lite",
+  "openai/gpt-5",
+  "openai/gpt-5-mini",
+  "openai/gpt-5-nano",
+]);
+const DEFAULT_MODEL = "google/gemini-3.5-flash";
 
 async function persistAssistantMessage(opts: {
   token: string;
@@ -70,8 +84,9 @@ export const Route = createFileRoute("/api/chat")({
         if (!key) return new Response("Missing LOVABLE_API_KEY", { status: 500 });
 
         const gateway = createLovableAiGatewayProvider(key);
-        // Multimodal (texto + imagem) com modelo mais forte: Gemini 3.1 Pro Preview.
-        const model = gateway("google/gemini-3.1-pro-preview");
+        const requestedModel = typeof body.model === "string" ? body.model : "";
+        const modelId = ALLOWED_MODELS.has(requestedModel) ? requestedModel : DEFAULT_MODEL;
+        const model = gateway(modelId);
 
         const result = streamText({
           model,
