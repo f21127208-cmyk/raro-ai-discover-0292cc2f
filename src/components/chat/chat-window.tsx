@@ -491,6 +491,16 @@ export function ChatWindow({
     <div className="flex flex-col h-full">
       {/* Top bar */}
       <div className="flex items-center justify-end gap-2 px-4 py-2 border-b border-border/50 bg-background/60 backdrop-blur">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowModelBar((v) => !v)}
+          className="gap-2 text-muted-foreground hover:text-foreground"
+          title={`Modelo atual: ${model}`}
+        >
+          <span className="hidden sm:inline">Modelo:</span>
+          <span className="max-w-[140px] truncate text-xs font-mono">{model}</span>
+        </Button>
         <Dialog open={noticeOpen} onOpenChange={setNoticeOpen}>
           <DialogTrigger asChild>
             <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground">
@@ -511,6 +521,30 @@ export function ChatWindow({
           Salvar conversa
         </Button>
       </div>
+
+      {showModelBar && (
+        <div className="border-b border-border/50 bg-muted/30 px-4 py-2">
+          <div className="max-w-3xl mx-auto flex items-center gap-2">
+            <input
+              type="text"
+              value={modelDraft}
+              onChange={(e) => setModelDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") applyModel();
+                if (e.key === "Escape") setShowModelBar(false);
+              }}
+              placeholder="ex: google/gemini-3.5-flash"
+              className="flex-1 bg-background border border-border rounded-md px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/50"
+              autoFocus
+            />
+            <Button size="sm" onClick={applyModel}>Trocar</Button>
+            <Button size="sm" variant="ghost" onClick={() => setShowModelBar(false)}>Cancelar</Button>
+          </div>
+          <p className="max-w-3xl mx-auto text-[10px] text-muted-foreground mt-1">
+            Muda o modelo só para você (salvo no navegador). Ex: google/gemini-3.5-flash, openai/gpt-5-mini
+          </p>
+        </div>
+      )}
 
       {!noticeDismissed && (
         <div className="border-b border-amber-500/30 bg-amber-500/10 px-4 py-2.5">
