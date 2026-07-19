@@ -581,7 +581,7 @@ export function ChatWindow({
 
       {showModelBar && (
         <div className="border-b border-border/50 bg-muted/30 px-4 py-2">
-          <div className="max-w-3xl mx-auto flex items-center gap-2">
+          <div className="max-w-3xl mx-auto flex items-center gap-2 flex-wrap">
             <input
               type="text"
               value={modelDraft}
@@ -591,14 +591,47 @@ export function ChatWindow({
                 if (e.key === "Escape") setShowModelBar(false);
               }}
               placeholder="ex: google/gemini-3.5-flash"
-              className="flex-1 bg-background border border-border rounded-md px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="flex-1 min-w-[180px] bg-background border border-border rounded-md px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/50"
               autoFocus
             />
-            <Button size="sm" onClick={applyModel}>Trocar</Button>
-            <Button size="sm" variant="ghost" onClick={() => setShowModelBar(false)}>Cancelar</Button>
+            <Button size="sm" onClick={applyModel}>Usar só pra mim</Button>
+            {hasPersonalModel && (
+              <Button size="sm" variant="outline" onClick={resetPersonalModel}>
+                Usar global ({globalModel})
+              </Button>
+            )}
+            <Button size="sm" variant="ghost" onClick={() => setShowModelBar(false)}>Fechar</Button>
           </div>
           <p className="max-w-3xl mx-auto text-[10px] text-muted-foreground mt-1">
-            Muda o modelo só para você (salvo no navegador). Ex: google/gemini-3.5-flash, openai/gpt-5-mini
+            {hasPersonalModel
+              ? `Você está usando um modelo pessoal. Global do site: ${globalModel}`
+              : `Sem modelo pessoal — usando o global: ${globalModel}`}
+          </p>
+        </div>
+      )}
+
+      {isOwner && showGlobalBar && (
+        <div className="border-b border-primary/40 bg-primary/10 px-4 py-2">
+          <div className="max-w-3xl mx-auto flex items-center gap-2 flex-wrap">
+            <input
+              type="text"
+              value={globalDraft}
+              onChange={(e) => setGlobalDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") applyGlobalModel();
+                if (e.key === "Escape") setShowGlobalBar(false);
+              }}
+              placeholder="ex: google/gemini-3.5-flash"
+              className="flex-1 min-w-[180px] bg-background border border-primary/50 rounded-md px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary"
+              autoFocus
+            />
+            <Button size="sm" onClick={applyGlobalModel} disabled={savingGlobal}>
+              {savingGlobal ? "Salvando..." : "Aplicar pra todo mundo"}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setShowGlobalBar(false)}>Fechar</Button>
+          </div>
+          <p className="max-w-3xl mx-auto text-[10px] text-primary/80 mt-1">
+            🛠 Barra do dono — muda o modelo padrão do site inteiro. Modelos permitidos: google/gemini-3.5-flash, google/gemini-3-flash-preview, google/gemini-3.1-pro-preview, openai/gpt-5-mini...
           </p>
         </div>
       )}
