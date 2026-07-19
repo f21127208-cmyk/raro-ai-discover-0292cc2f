@@ -85,7 +85,17 @@ export const Route = createFileRoute("/api/chat")({
 
         const gateway = createLovableAiGatewayProvider(key);
         const requestedModel = typeof body.model === "string" ? body.model : "";
-        const modelId = ALLOWED_MODELS.has(requestedModel) ? requestedModel : DEFAULT_MODEL;
+        let modelId = ALLOWED_MODELS.has(requestedModel) ? requestedModel : "";
+        if (!modelId) {
+          // Fall back to the owner-configured global model, then to DEFAULT_MODEL.
+          const { data: setting } = await userSupabase
+            .from("app_settings")
+            .select("value")
+            .eq("key", "global_model")
+            .maybeSingle();
+          const globalModel = (setting?.value as string) ?? "";
+          modelId = ALLOWED_MODELS.has(globalModel) ? globalModel : DEFAULT_MODEL;
+        }
         const model = gateway(modelId);
 
         const result = streamText({
