@@ -125,8 +125,16 @@ export function ChatWindow({
   const [musicUrl, setMusicUrl] = useState<string | null>(null);
   const [musicPrompt, setMusicPrompt] = useState<string>("");
   const [model, setModel] = useState<string>("google/gemini-3.5-flash");
+  const [hasPersonalModel, setHasPersonalModel] = useState(false);
   const [showModelBar, setShowModelBar] = useState(false);
   const [modelDraft, setModelDraft] = useState<string>("");
+  const [isOwner, setIsOwner] = useState(false);
+  const [globalModel, setGlobalModelState] = useState<string>("google/gemini-3.5-flash");
+  const [showGlobalBar, setShowGlobalBar] = useState(false);
+  const [globalDraft, setGlobalDraft] = useState<string>("");
+  const [savingGlobal, setSavingGlobal] = useState(false);
+  const getOwnerFn = useServerFn(getOwnerAndModel);
+  const setGlobalModelFn = useServerFn(setGlobalModel);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -134,18 +142,55 @@ export function ChatWindow({
     if (saved) {
       setModel(saved);
       setModelDraft(saved);
+      setHasPersonalModel(true);
     } else {
       setModelDraft("google/gemini-3.5-flash");
     }
-  }, []);
+    // Load owner + global model from server.
+    getOwnerFn({ data: undefined })
+      .then((info) => {
+        setIsOwner(info.isOwner);
+        setGlobalModelState(info.globalModel);
+        setGlobalDraft(info.globalModel);
+        if (!saved) setModel(info.globalModel);
+      })
+      .catch(() => {});
+  }, [getOwnerFn]);
 
   const applyModel = () => {
     const next = modelDraft.trim();
     if (!next) return;
     setModel(next);
+    setHasPersonalModel(true);
     localStorage.setItem("raro-model", next);
-    toast.success(`Modelo alterado para ${next}`);
+    toast.success(`Seu modelo mudou para ${next}`);
     setShowModelBar(false);
+  };
+
+  const resetPersonalModel = () => {
+    localStorage.removeItem("raro-model");
+    setHasPersonalModel(false);
+    setModel(globalModel);
+    setModelDraft(globalModel);
+    toast.success("Usando o modelo global do site.");
+    setShowModelBar(false);
+  };
+
+  const applyGlobalModel = async () => {
+    const next = globalDraft.trim();
+    if (!next) return;
+    setSavingGlobal(true);
+    try {
+      await setGlobalModelFn({ data: { model: next } });
+      setGlobalModelState(next);
+      if (!hasPersonalModel) setModel(next);
+      toast.success(`Modelo global do site alterado para ${next}`);
+      setShowGlobalBar(false);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao salvar modelo global");
+    } finally {
+      setSavingGlobal(false);
+    }
   };
 
   const generateMusic = async () => {
