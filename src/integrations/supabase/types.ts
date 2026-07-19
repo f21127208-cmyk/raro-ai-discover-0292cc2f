@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_owner: {
+        Row: {
+          id: boolean
+          user_id: string
+        }
+        Insert: {
+          id?: boolean
+          user_id: string
+        }
+        Update: {
+          id?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
+      app_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           created_at: string
@@ -78,7 +111,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_owner: { Args: { _uid: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
