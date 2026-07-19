@@ -5,6 +5,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { createThread, renameThread } from "@/lib/threads.functions";
+import { getOwnerAndModel, setGlobalModel } from "@/lib/settings.functions";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
