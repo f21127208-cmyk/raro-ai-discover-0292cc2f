@@ -291,6 +291,7 @@ export function ChatWindow({
           body: {
             messages,
             threadId: (body as { threadId?: string } | undefined)?.threadId ?? currentThreadId,
+            model,
           },
         };
       },
