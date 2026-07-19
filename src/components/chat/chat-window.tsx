@@ -123,6 +123,29 @@ export function ChatWindow({
   const [generatingMusic, setGeneratingMusic] = useState(false);
   const [musicUrl, setMusicUrl] = useState<string | null>(null);
   const [musicPrompt, setMusicPrompt] = useState<string>("");
+  const [model, setModel] = useState<string>("google/gemini-3.5-flash");
+  const [showModelBar, setShowModelBar] = useState(false);
+  const [modelDraft, setModelDraft] = useState<string>("");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = localStorage.getItem("raro-model");
+    if (saved) {
+      setModel(saved);
+      setModelDraft(saved);
+    } else {
+      setModelDraft("google/gemini-3.5-flash");
+    }
+  }, []);
+
+  const applyModel = () => {
+    const next = modelDraft.trim();
+    if (!next) return;
+    setModel(next);
+    localStorage.setItem("raro-model", next);
+    toast.success(`Modelo alterado para ${next}`);
+    setShowModelBar(false);
+  };
 
   const generateMusic = async () => {
     const prompt = input.trim();
