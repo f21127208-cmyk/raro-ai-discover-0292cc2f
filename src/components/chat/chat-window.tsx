@@ -547,6 +547,17 @@ export function ChatWindow({
           <span className="hidden sm:inline">Modelo:</span>
           <span className="max-w-[140px] truncate text-xs font-mono">{model}</span>
         </Button>
+        {isOwner && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowGlobalBar((v) => !v)}
+            className="gap-2 text-primary hover:text-primary"
+            title={`Modelo global do site: ${globalModel}`}
+          >
+            🛠 <span className="hidden sm:inline">Global</span>
+          </Button>
+        )}
         <Dialog open={noticeOpen} onOpenChange={setNoticeOpen}>
           <DialogTrigger asChild>
             <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground">
