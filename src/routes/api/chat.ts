@@ -84,8 +84,9 @@ export const Route = createFileRoute("/api/chat")({
         if (!key) return new Response("Missing LOVABLE_API_KEY", { status: 500 });
 
         const gateway = createLovableAiGatewayProvider(key);
-        // Multimodal (texto + imagem) com modelo mais forte: Gemini 3.1 Pro Preview.
-        const model = gateway("google/gemini-3.1-pro-preview");
+        const requestedModel = typeof body.model === "string" ? body.model : "";
+        const modelId = ALLOWED_MODELS.has(requestedModel) ? requestedModel : DEFAULT_MODEL;
+        const model = gateway(modelId);
 
         const result = streamText({
           model,
