@@ -147,7 +147,7 @@ export function ChatWindow({
       setModelDraft("google/gemini-3.5-flash");
     }
     // Load owner + global model from server.
-    getOwnerFn({ data: undefined })
+    getOwnerFn()
       .then((info) => {
         setIsOwner(info.isOwner);
         setGlobalModelState(info.globalModel);
