@@ -1,0 +1,131 @@
+name: Android APK (Vite + Capacitor)
+
+on:
+  push:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    env:
+      CAPACITOR_APP_ID: "com.raroai.discover"
+      CAPACITOR_APP_NAME: "Raro AI Discover"
+      NODE_VERSION: "20"
+      JAVA_VERSION: "17"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Setup Java (Gradle)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: gradle
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web (Vite)
+        run: npm run build
+
+      - name: Install Android SDK components (best effort)
+        run: |
+          set -e
+          if [ -z "$ANDROID_HOME" ]; then
+            echo "ANDROID_HOME not set; skipping sdkmanager installs."
+            exit 0
+          fi
+
+          SDKMANAGER="$(find "$ANDROID_HOME" -type f -name sdkmanager -print | head -n 1 || true)"
+          if [ -z "$SDKMANAGER" ]; then
+            echo "sdkmanager not found; skipping sdkmanager installs."
+            exit 0
+          fi
+
+          yes | "$SDKMANAGER" --licenses || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-34" "build-tools;34.0.0" || true
+
+      - name: Ensure Capacitor Android project exists
+        run: |
+          set -e
+          if [ ! -f "android/app/build.gradle" ]; then
+            npx cap add android
+          fi
+
+          # Mantém o android/ alinhado com o capacitor.config.ts + dist/
+          npx cap sync android
+
+      - name: Patch AndroidManifest.xml
+        run: |
+          cat > android/app/src/main/AndroidManifest.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+            <application
+              android:allowBackup="true"
+              android:icon="@mipmap/ic_launcher"
+              android:label="@string/app_name"
+              android:roundIcon="@mipmap/ic_launcher_round"
+              android:supportsRtl="true"
+              android:theme="@style/AppTheme"
+              android:usesCleartextTraffic="true">
+
+              <activity
+                android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"
+                android:name=".MainActivity"
+                android:label="@string/title_activity_main"
+                android:theme="@style/AppTheme.NoActionBarLaunch"
+                android:launchMode="singleTask"
+                android:exported="true">
+
+                <intent-filter>
+                  <action android:name="android.intent.action.MAIN" />
+                  <category android:name="android.intent.category.LAUNCHER" />
+                </intent-filter>
+
+              </activity>
+
+            </application>
+
+            <uses-permission android:name="android.permission.INTERNET" />
+          </manifest>
+          EOF
+
+      - name: Patch MainActivity.java (package = CAPACITOR_APP_ID)
+        run: |
+          set -e
+          PKG_PATH="android/app/src/main/java/$(echo "${CAPACITOR_APP_ID}" | tr '.' '/')"
+          mkdir -p "$PKG_PATH"
+
+          cat > "$PKG_PATH/MainActivity.java" <<EOF
+          package ${CAPACITOR_APP_ID};
+
+          import com.getcapacitor.BridgeActivity;
+
+          public class MainActivity extends BridgeActivity {}
+          EOF
+
+      - name: Build APK (Debug)
+        run: |
+          set -e
+          chmod +x android/gradlew
+          cd android
+          ./gradlew assembleDebug
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
