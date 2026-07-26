@@ -107,6 +107,8 @@ export function ChatWindow({
   const qc = useQueryClient();
   const createFn = useServerFn(createThread);
   const renameFn = useServerFn(renameThread);
+  const saveLocalFn = useServerFn(saveLocalExchange);
+
 
   const [input, setInput] = useState("");
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
