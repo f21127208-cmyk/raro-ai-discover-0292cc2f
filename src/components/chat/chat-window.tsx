@@ -4,7 +4,9 @@ import { DefaultChatTransport, type UIMessage } from "ai";
 import { useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { createThread, renameThread } from "@/lib/threads.functions";
+import { createThread, renameThread, saveLocalExchange } from "@/lib/threads.functions";
+import { raroLocalAnswer } from "@/lib/raro-brain";
+
 import { getOwnerAndModel, setGlobalModel } from "@/lib/settings.functions";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
@@ -105,6 +107,8 @@ export function ChatWindow({
   const qc = useQueryClient();
   const createFn = useServerFn(createThread);
   const renameFn = useServerFn(renameThread);
+  const saveLocalFn = useServerFn(saveLocalExchange);
+
 
   const [input, setInput] = useState("");
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
@@ -322,7 +326,7 @@ export function ChatWindow({
     return () => urls.forEach((u) => URL.revokeObjectURL(u));
   }, [pendingFiles]);
 
-  const { messages, sendMessage, status, error } = useChat({
+  const { messages, sendMessage, setMessages, status, error } = useChat({
     id: currentThreadId ?? "new",
     messages: initialMessages,
     transport: new DefaultChatTransport({
@@ -400,10 +404,47 @@ export function ChatWindow({
       filesPayload = dt.files;
     }
 
+    // Deterministic local "brain" (porta do MainActivity.java): short-circuits
+    // saudações, criador, buscas curtas e prompts de música/história — sem gastar IA.
+    const localAnswer = pendingFiles.length === 0 ? raroLocalAnswer(text) : null;
+    if (localAnswer && tid) {
+      const now = Date.now();
+      const userMsg: UIMessage = {
+        id: `local-user-${now}`,
+        role: "user",
+        parts: [{ type: "text", text }],
+      };
+      const asstMsg: UIMessage = {
+        id: `local-asst-${now}`,
+        role: "assistant",
+        parts: [{ type: "text", text: localAnswer }],
+      };
+      setMessages((prev) => [...prev, userMsg, asstMsg]);
+      setInput("");
+      setPendingFiles([]);
+      try {
+        await saveLocalFn({
+          data: {
+            threadId: tid,
+            userParts: userMsg.parts as unknown as unknown[],
+            assistantText: localAnswer,
+          },
+        });
+        if (visibleMessages.length === 0) {
+          await renameFn({ data: { id: tid, title: nextTitle.slice(0, 80) } }).catch(() => {});
+          qc.invalidateQueries({ queryKey: ["threads"] });
+        }
+      } catch (e) {
+        console.warn("saveLocalExchange failed", e);
+      }
+      return;
+    }
+
     setInput("");
     setPendingFiles([]);
     sendMessage({ text: text || "Analise a imagem.", files: filesPayload }, { body: { threadId: tid } });
   };
+
 
   // ---- Microphone ----
   const startRecording = async () => {

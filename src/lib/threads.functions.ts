@@ -63,3 +63,37 @@ export const getThreadMessages = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return rows ?? [];
   });
+
+export const saveLocalExchange = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        threadId: z.string().uuid(),
+        userParts: z.array(z.any()),
+        assistantText: z.string().min(1),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { error: e1 } = await context.supabase.from("messages").insert({
+      thread_id: data.threadId,
+      user_id: context.userId,
+      role: "user",
+      parts: data.userParts as unknown as object,
+    });
+    if (e1) throw new Error(e1.message);
+    const { data: row, error: e2 } = await context.supabase
+      .from("messages")
+      .insert({
+        thread_id: data.threadId,
+        user_id: context.userId,
+        role: "assistant",
+        parts: [{ type: "text", text: data.assistantText }] as unknown as object,
+      })
+      .select("id")
+      .single();
+    if (e2) throw new Error(e2.message);
+    return { assistantId: row.id as string };
+  });
+
