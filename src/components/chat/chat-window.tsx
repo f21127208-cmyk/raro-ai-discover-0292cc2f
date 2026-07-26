@@ -4,7 +4,9 @@ import { DefaultChatTransport, type UIMessage } from "ai";
 import { useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { createThread, renameThread } from "@/lib/threads.functions";
+import { createThread, renameThread, saveLocalExchange } from "@/lib/threads.functions";
+import { raroLocalAnswer } from "@/lib/raro-brain";
+
 import { getOwnerAndModel, setGlobalModel } from "@/lib/settings.functions";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
