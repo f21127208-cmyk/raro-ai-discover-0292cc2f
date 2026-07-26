@@ -404,10 +404,47 @@ export function ChatWindow({
       filesPayload = dt.files;
     }
 
+    // Deterministic local "brain" (porta do MainActivity.java): short-circuits
+    // saudações, criador, buscas curtas e prompts de música/história — sem gastar IA.
+    const localAnswer = pendingFiles.length === 0 ? raroLocalAnswer(text) : null;
+    if (localAnswer && tid) {
+      const now = Date.now();
+      const userMsg: UIMessage = {
+        id: `local-user-${now}`,
+        role: "user",
+        parts: [{ type: "text", text }],
+      };
+      const asstMsg: UIMessage = {
+        id: `local-asst-${now}`,
+        role: "assistant",
+        parts: [{ type: "text", text: localAnswer }],
+      };
+      setMessages((prev) => [...prev, userMsg, asstMsg]);
+      setInput("");
+      setPendingFiles([]);
+      try {
+        await saveLocalFn({
+          data: {
+            threadId: tid,
+            userParts: userMsg.parts as unknown as unknown[],
+            assistantText: localAnswer,
+          },
+        });
+        if (visibleMessages.length === 0) {
+          await renameFn({ data: { id: tid, title: nextTitle.slice(0, 80) } }).catch(() => {});
+          qc.invalidateQueries({ queryKey: ["threads"] });
+        }
+      } catch (e) {
+        console.warn("saveLocalExchange failed", e);
+      }
+      return;
+    }
+
     setInput("");
     setPendingFiles([]);
     sendMessage({ text: text || "Analise a imagem.", files: filesPayload }, { body: { threadId: tid } });
   };
+
 
   // ---- Microphone ----
   const startRecording = async () => {
