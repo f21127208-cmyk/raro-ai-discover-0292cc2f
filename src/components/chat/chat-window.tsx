@@ -326,7 +326,7 @@ export function ChatWindow({
     return () => urls.forEach((u) => URL.revokeObjectURL(u));
   }, [pendingFiles]);
 
-  const { messages, sendMessage, status, error } = useChat({
+  const { messages, sendMessage, setMessages, status, error } = useChat({
     id: currentThreadId ?? "new",
     messages: initialMessages,
     transport: new DefaultChatTransport({
